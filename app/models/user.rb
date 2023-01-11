@@ -21,8 +21,11 @@ class User < ApplicationRecord
       request = Net::HTTP::Post.new(url)
       request["Content-Type"] = "application/json"
       request["Cookie"] = "laravel_session=o2UYRsf3cZoofqSBY1WjaTfJFP0AbJkvKQffyp6X"
-      request.body = "{\"query\":\"query ($userId: Int, $userName: String) {MediaListCollection(userId: $userId, userName: $userName, type: ANIME, status: COMPLETED, sort: SCORE_DESC){ lists{ entries{ score repeat mediaId } } } }\",\"variables\":{\"userName\":\"#{anilist_account}\"}}"
+      request.body = "{\"query\":\"query ($userId: Int, $userName: String) { User(id: $userId, name: $userName){ mediaListOptions{ scoreFormat } } MediaListCollection(userId: $userId, userName: $userName, type: ANIME, status: COMPLETED, sort: SCORE_DESC){ lists{ entries{ score repeat mediaId } } } }\",\"variables\":{\"userName\":\"#{anilist_account}\"}}"
       response = https.request(request)
+      format = JSON.parse(response.read_body)['data']['User']['mediaListOptions']['scoreFormat']
+      self.score_format = format
+      save
       JSON.parse(response.read_body)['data']['MediaListCollection']['lists'][0]['entries'].each do |anime|
         puts self
         Anime.create(user_id: id, anime_url: anime['mediaId'], repeat: anime['repeat'], my_score: anime['score'])
